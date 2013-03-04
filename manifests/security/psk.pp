@@ -14,11 +14,6 @@
 #     psk => 'my extremely long and tightly guarded preshared key',
 #   }
 define mcollective::security::psk($psk) {
-
-  if ! defined(Mcollective::Plugin['security/psk']) {
-    mcollective::plugin { 'security/psk': }
-  }
-
   concat::fragment { "${name} - psk security":
     content => template('mcollective/security/psk.cfg.erb'),
     order   => 10,
