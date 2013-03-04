@@ -40,7 +40,8 @@
 #
 class mcollective::server(
   $main_collective = 'mcollective',
-  $collectives     = ['mcollective']
+  $collectives     = ['mcollective'],
+  $manage_modules  = true
 ) {
 
   include mcollective::package::server
@@ -90,15 +91,27 @@ class mcollective::server(
     psk => $::mcollective::params::psk
   }
 
-  include mcollective::server::directories
-  include mcollective::server::defaultplugins
-  include mcollective::server::core_plugins
-  include mcollective::server::custom_plugins
+  if $manage_modules == 'true' {
+    include mcollective::server::directories
+    include mcollective::server::defaultplugins
+    include mcollective::server::core_plugins
+    include mcollective::server::custom_plugins
 
-  Class['mcollective::server::directories']
-    -> Class['mcollective::server::defaultplugins']
+    Class['mcollective::server::directories']
+      -> Class['mcollective::server::defaultplugins']
 
-  Class['mcollective::server::directories']
-    -> Class['mcollective::server::core_plugins']
+    Class['mcollective::server::directories']
+      -> Class['mcollective::server::core_plugins']
+  } else {
+    $plugins = [
+      'mcollective-facter-facts',
+      'puppet',
+      'package',
+      'service'
+    ]
 
+    mcollective::plugin { $plugins:
+      source => 'package'
+    }
+  }
 }
