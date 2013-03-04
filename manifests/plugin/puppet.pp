@@ -21,10 +21,6 @@
 #
 # * default: mcollective
 #
-# [*source*]
-#
-# Whether to install from package or puppet fileserver.
-#
 # == Examples
 #
 #
@@ -50,20 +46,27 @@
 #    # files will be in `modules/puppet/files/plugins/agent/deploy.{rb,ddl}`
 #    mcollective::plugin {'agent/deploy': has_ddl => true, module => 'puppet' }
 #
-define mcollective::plugin(
+define mcollective::plugin::puppet(
   $has_ddl = false,
   $module = 'mcollective',
-  $source = 'puppet',
 ) {
-  if $source == 'puppet' {
-    $real_resource_params = {
-      has_ddl => $has_ddl,
-      module  => $module
-    }
-  } else {
-    $real_resource_params = {}
+
+  include mcollective::params
+  include mcollective::server
+
+  $filebase = "${mcollective::params::custom_libdir}/mcollective/${name}"
+
+  file { "${filebase}.rb":
+    ensure => present,
+    mode   => '0644',
+    owner  => 'root',
+    group  => 0,
+    source => "puppet:///modules/${module}/plugins/${name}.rb",
+    before => Class['mcollective::package::server'],
+    notify => Service[$mcollective::params::servicename],
   }
 
-  $resource_params = { "${name}" => $real_resource_params }
-  create_resources("mcollective::plugin::${source}", $resource_params)
+  if $has_ddl {
+    mcollective::plugin::ddl { $name: module => $module }
+  }
 }
